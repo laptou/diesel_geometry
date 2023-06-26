@@ -3,6 +3,32 @@
 pub mod geometric;
 
 pub mod sql_types {
+    use diesel::sql_types::ops::{Add, Div, Mul, Sub};
+
+    macro_rules! impl_point_transform {
+        ($ty: ty) => {
+            impl Add for $ty {
+                type Rhs = Point;
+                type Output = $ty;
+            }
+
+            impl Sub for $ty {
+                type Rhs = Point;
+                type Output = $ty;
+            }
+
+            impl Mul for $ty {
+                type Rhs = Point;
+                type Output = $ty;
+            }
+
+            impl Div for $ty {
+                type Rhs = Point;
+                type Output = $ty;
+            }
+        };
+    }
+
     /// The PostgreSQL [Point](https://www.postgresql.org/docs/current/static/datatype-geometric.html) type.
     ///
     /// ### [`ToSql`](::diesel::serialize::ToSql) impls
@@ -53,6 +79,8 @@ pub mod sql_types {
     #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
     #[diesel(postgres_type(oid = 600, array_oid = 1017))]
     pub struct Point;
+
+    impl_point_transform!(Point);
 
     /// The PostgreSQL [Box](https://www.postgresql.org/docs/current/static/datatype-geometric.html) type.
     ///
@@ -114,6 +142,8 @@ pub mod sql_types {
     #[diesel(postgres_type(oid = 603, array_oid = 1020))]
     pub struct Box;
 
+    impl_point_transform!(Box);
+
     /// The PostgreSQL [Circle](https://www.postgresql.org/docs/current/static/datatype-geometric.html) type.
     ///
     /// ### [`ToSql`](::diesel::serialize::ToSql) impls
@@ -165,4 +195,6 @@ pub mod sql_types {
     #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
     #[diesel(postgres_type(oid = 718, array_oid = 719))]
     pub struct Circle;
+
+    impl_point_transform!(Circle);
 }

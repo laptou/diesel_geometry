@@ -4,3 +4,4 @@ migrations
 
 # editor files
 *.swp
+.vscode

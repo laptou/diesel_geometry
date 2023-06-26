@@ -153,7 +153,7 @@ mod tests {
     use expression_methods::*;
     use pg::types::geometric::{PgBox, PgCircle, PgPoint};
     use sql_types::{self, Circle, Point};
-    use test_helpers::{connection};
+    use test_helpers::connection;
 
     #[test]
     fn point_encodes_correctly() {
@@ -207,7 +207,8 @@ mod tests {
             .values(&NewItem {
                 name: "Shiny Thing",
                 location: PgPoint(3.1, 9.4),
-            }).returning(schema::items::dsl::location);
+            })
+            .returning(schema::items::dsl::location);
     }
 
     #[test]
@@ -238,7 +239,8 @@ mod tests {
             id SERIAL PRIMARY KEY,
             boxes BOX
         )",
-            ).unwrap();
+            )
+            .unwrap();
         use self::schema::box_roundtrip;
         #[derive(Debug, PartialEq, Insertable, Queryable)]
         #[diesel(table_name = box_roundtrip)]
@@ -273,15 +275,44 @@ mod tests {
             point
                 .into_sql::<Point>()
                 .is_contained_by(bounding_circle.into_sql::<Circle>()),
-        ).get_result::<bool>(&mut connection)
+        )
+        .get_result::<bool>(&mut connection)
         .unwrap();
         assert!(is_contained);
         let is_contained = diesel::select(
             AsExpression::<Point>::as_expression(point)
                 .is_contained_by(bounding_box.into_sql::<sql_types::Box>()),
-        ).get_result::<bool>(&mut connection)
+        )
+        .get_result::<bool>(&mut connection)
         .unwrap();
         assert!(is_contained);
+    }
+
+    #[test]
+    fn point_transform_queries() {
+        let mut connection = connection();
+        let point1 = PgPoint(1., 1.);
+        let point2 = PgPoint(3., 5.);
+
+        let point3 = diesel::select(point1.into_sql::<Point>() - point2.into_sql::<Point>())
+            .get_result::<PgPoint>(&mut connection)
+            .unwrap();
+        assert_eq!(point3, PgPoint(-2., -4.));
+
+        let point3 = diesel::select(point1.into_sql::<Point>() + point2.into_sql::<Point>())
+            .get_result::<PgPoint>(&mut connection)
+            .unwrap();
+        assert_eq!(point3, PgPoint(4., 6.));
+
+        let point3 = diesel::select(point1.into_sql::<Point>() * point2.into_sql::<Point>())
+            .get_result::<PgPoint>(&mut connection)
+            .unwrap();
+        assert_eq!(point3, PgPoint(-2., 8.));
+
+        let point3 = diesel::select(point2.into_sql::<Point>() / point1.into_sql::<Point>())
+            .get_result::<PgPoint>(&mut connection)
+            .unwrap();
+        assert_eq!(point3, PgPoint(4., 1.));
     }
 
     #[test]
@@ -293,7 +324,8 @@ mod tests {
             id SERIAL PRIMARY KEY,
             circles CIRCLE
         )",
-            ).unwrap();
+            )
+            .unwrap();
         use self::schema::circle_roundtrip;
         #[derive(Debug, PartialEq, Insertable, Queryable)]
         #[diesel(table_name = circle_roundtrip)]
