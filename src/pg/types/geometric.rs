@@ -1,7 +1,7 @@
 //! Support for Geometric types under PostgreSQL.
 
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
-use diesel::backend::RawValue;
+use diesel::backend::Backend;
 
 use diesel::deserialize::{self, FromSql};
 use diesel::expression::AsExpression;
@@ -25,7 +25,7 @@ impl PgPoint {
 }
 
 impl FromSql<Point, Pg> for PgPoint {
-    fn from_sql(bytes: RawValue<'_, Pg>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <Pg as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
         let mut bytes = bytes.as_bytes();
         let x = bytes.read_f64::<NetworkEndian>()?;
         let y = bytes.read_f64::<NetworkEndian>()?;
@@ -87,7 +87,7 @@ pub struct PgBox(pub PgPoint, pub PgPoint);
 // https://github.com/postgres/postgres/blob/9d4649ca49416111aee2c84b7e4441a0b7aa2fac/src/backend/utils/adt/geo_ops.c
 
 impl FromSql<sql_types::Box, Pg> for PgBox {
-    fn from_sql(value: RawValue<'_, Pg>) -> deserialize::Result<Self> {
+    fn from_sql(value: <Pg as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes();
         let (upper_bytes, lower_bytes) = bytes.split_at(16);
         // By convention the box is written as (lower left, upper right) and is stored as [ high.x,
@@ -124,7 +124,7 @@ impl ToSql<sql_types::Box, Pg> for PgBox {
 pub struct PgCircle(pub PgPoint, pub f64);
 
 impl FromSql<sql_types::Circle, Pg> for PgCircle {
-    fn from_sql(value: RawValue<'_, Pg>) -> deserialize::Result<Self> {
+    fn from_sql(value: <Pg as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes();
         let (center_bytes, mut radius_bytes) = bytes.split_at(16);
         let center = PgPoint::from_sql_bytes(center_bytes)?;
